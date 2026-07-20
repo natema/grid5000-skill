@@ -1,0 +1,9 @@
+# OS / editor cruft
+.DS_Store
+*.swp
+*~
+
+# Never commit local agent state or personal overlays
+.claude/
+.codex/
+*.local.md
