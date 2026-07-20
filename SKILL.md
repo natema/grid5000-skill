@@ -83,7 +83,7 @@ oarsub -q production -l gpu=1,walltime=24 "bash run.sh"
 oarsub -q production -S ./job_oar.sh
 
 # Advance reservation (default queue; restricted in production):
-oarsub -r "2026-06-15 20:00:00" -l gpu=1,walltime=10
+oarsub -r "2026-09-15 20:00:00" -l gpu=1,walltime=10
 ```
 Monitor / manage:
 ```bash
