@@ -4,10 +4,11 @@ A portable **AI-agent skill** for the [Grid'5000](https://www.grid5000.fr) HPC t
 knowledge an LLM coding agent needs to reserve nodes, submit jobs, and run GPU/ML workloads on
 Grid'5000 (including the Inria **"abaca"** / production queue) *without* getting it wrong.
 
-Grid'5000 uses the **OAR** scheduler (`oarsub`), **not** SLURM, and has a three-tier
-access → frontend → compute-node workflow with per-site, un-backed-up storage. Agents that default
-to SLURM/`sbatch` or that try to compute on the frontend fail on Grid'5000. This skill encodes the
-correct commands, the gotchas, and a ready-to-use end-to-end ML workflow.
+Grid'5000 uses the **OAR** scheduler (`oarsub`) — less widespread than SLURM, so agents rarely know
+it well — together with a three-tier access → frontend → compute-node workflow and per-site,
+un-backed-up storage. Out of the box, assistants tend to reach for the wrong commands or compute on
+the frontend. This skill encodes the correct commands, the gotchas, and a ready-to-use end-to-end
+ML workflow.
 
 ## What's in it
 
