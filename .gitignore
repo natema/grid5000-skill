@@ -7,3 +7,6 @@
 .claude/
 .codex/
 *.local.md
+
+# Harness-specific instructions stay local; the published conventions live in AGENTS.md
+CLAUDE.md

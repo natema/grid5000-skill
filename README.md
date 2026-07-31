@@ -60,7 +60,7 @@ guarantees.
 ## Contributing
 
 Corrections and additional recipes welcome — especially for sites/clusters not covered here. Keep
-`SKILL.md` harness-agnostic and free of personal account details (see `CLAUDE.md`).
+`SKILL.md` harness-agnostic and free of personal account details (see [`AGENTS.md`](AGENTS.md)).
 
 ## License
 
