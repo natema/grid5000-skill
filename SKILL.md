@@ -18,9 +18,10 @@ hardware/tooling — reached with `oarsub -q abaca` (or `-q production`), still 
 >    gateway; the per-site **frontend** (e.g. `nancy`, `rennes`, `sophia`, `grenoble`) is for
 >    `oarsub`/editing/data only; **all compute runs on the node OAR gives you.** NEVER train, run
 >    heavy Python, or do big installs on the frontend.
-> 2. **Long GPU training → `-q production` (a.k.a. `-q abaca`).** The default queue is daytime-
->    restricted with tiny walltimes; production allows multi-hour/day GPU jobs. Production access
->    must be enabled on your group/account.
+> 2. **Long runs (GPU *or* CPU) → `-q production` (a.k.a. `-q abaca`).** The `default` queue
+>    forbids crossing `09:00` or `19:00` on weekdays and caps daytime usage; `production` allows
+>    multi-hour/day CPU and GPU jobs across weekdays. Production access must be enabled on your
+>    group/account.
 > 3. **Home is per-site and NOT shared across sites; there are NO backups.** Copy data explicitly
 >    between sites; pull results off-cluster yourself.
 > 4. **Tell the user what you reserve and where** (job id, site, node, queue) before/after.
@@ -100,6 +101,30 @@ oarsub -q production -l gpu=1 -p "gpu_compute_capability_major>=8" -I   # bf16-c
 oarsub -q production -p "cluster='grat'" -l gpu=1,walltime=8 -I
 ```
 
+### `default`-queue Usage Policy (`-t night`, `-t day`, `usagepolicycheck`)
+
+Per `Grid5000:UsagePolicy`, `-q default` splits weekdays (`Mon–Fri`) into **daytime (`09:00–19:00`)**
+(per-cluster core-hour caps and short walltimes) and **nighttime (`19:00–09:00`)**, with continuous
+weekend windows from **Friday `19:00` to Monday `09:00`**. Jobs in `-q default` **must not cross
+`09:00` or `19:00` on weekdays**.
+
+- **FIFO queue-slip trap:** OAR does *not* reject a long `-q default` batch job submitted without
+  `-t night`. If target nodes are busy — or if idle nodes belong to `-t exotic` clusters that OAR
+  filters out automatically unless `-t exotic` is passed — FIFO scheduling can delay a weekend or
+  evening job until Monday/weekday daytime and run it across `09:00`/`19:00`, triggering an
+  automated Usage Policy violation notice.
+- **Always bound `-q default` batch jobs:** pass **`-t night`** (`oarsub -q default -t night ...`)
+  for overnight or weekend runs so OAR admission rules enforce `postpone` + a hard `09:00` (or
+  `Monday 09:00`) `deadline`, or **`-t day`** (`deadline=19:00`) for daytime runs; inspect
+  `scheduled_start` and `properties` with `oarstat -j <jobid> -f`. For unattended multi-day CPU or
+  GPU campaigns, use `-q production` (`-q abaca`) instead.
+- **Verify live on any site frontend with `usagepolicycheck`:**
+  ```bash
+  usagepolicycheck -l --detailed-limits --sites <site>   # per-cluster daytime core-hour caps
+  usagepolicycheck                                       # audit past-week + queued jobs (all sites)
+  usagepolicycheck --sites <site>                        # audit one site (caps + 09:00/19:00 crossings)
+  ```
+
 ### `#OAR` submission script template
 ```bash
 #!/bin/bash
@@ -118,8 +143,9 @@ uv run python train.py
 
 - `abaca` == the `production` queue (both `-q abaca` and `-q production` accepted; if one is
   rejected try the other — aliasing can be site-dependent).
-- Spans GPU clusters across **Nancy, Rennes, Grenoble, Sophia** (e.g. Nancy `grat` = 8× A100 80GB;
-  Sophia `musa` = H100 NVL). **Inventory changes** — confirm the live cluster/GPU via the site
+- Spans GPU and CPU clusters across **Nancy, Rennes, Grenoble, Sophia** (e.g. Nancy `grat` = 8×
+  A100 80GB; Sophia `musa` = H100 NVL; filter CPU-only nodes with `-p "gpu_count=0"`). **Inventory
+  changes** — confirm the live cluster/GPU via the site
   Hardware wiki page or `oarnodes` on the frontend before hardcoding a cluster name.
 - Production walltime caps by priority tier: p1 up to 168h, p2 96h, p3 48h, p4 24h. Advance
   reservations in production are restricted (high-priority users only).
@@ -214,9 +240,10 @@ so it survives disconnects; monitor with `oarstat -u` and the `OAR.<jobid>.*` lo
 - **Never compute on the frontend** — even heavy `uv`/`conda` installs go on a reserved node.
 - **Home is per-site**; "my files vanished" is usually the wrong site. **No backups** — `/tmp` wiped
   between jobs; copy results out.
-- **Production GPU work needs `-q production`/`-q abaca`** *and* group access; the default queue is
-  daytime-restricted (no crossing 09:00/19:00 on weekdays) with small walltimes — schedule heavy
-  work overnight/weekends or in production.
+- **Multi-hour/multi-day CPU or GPU work belongs in `-q production`/`-q abaca`** (requires group
+  access). In `-q default`, OAR does *not* block batch jobs from crossing `09:00`/`19:00` on
+  weekdays — always pass **`-t night`** on overnight/weekend `default` jobs so FIFO delays cannot
+  push them past `09:00`, and audit queued jobs with `usagepolicycheck`.
 - `besteffort` queue is preemptible (killed when needed) — checkpoint often if you use it.
 - Between your own nodes in a multi-node job use `oarsh`, not `ssh`, unless you own the whole node.
 - Inventory (clusters/GPUs under abaca) rotates — verify before hardcoding cluster names.
